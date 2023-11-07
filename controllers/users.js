@@ -66,4 +66,45 @@ const createUser = async (req, res) => {
   }
 };
 
-export { getUser, getUserById, createUser };
+const updateUserInfo = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const updatedUserInfo = await User.findByIdAndUpdate(
+      _id,
+      { ...req.body },
+      { new: true },
+    );
+    return res.send(updatedUserInfo);
+  } catch (error) {
+    return res.status(500).send({
+      message: 'Ошибка на стороне сервера',
+      error: error.message,
+    });
+  }
+};
+
+const updateUserAvatar = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const { avatar } = req.body;
+    const updatedUserInfo = await User.findByIdAndUpdate(
+      _id,
+      { avatar },
+      { new: true },
+    );
+    return res.send(updatedUserInfo);
+  } catch (error) {
+    return res.status(500).send({
+      message: 'Ошибка на стороне сервера',
+      error: error.message,
+    });
+  }
+};
+
+export {
+  getUser,
+  getUserById,
+  createUser,
+  updateUserInfo,
+  updateUserAvatar,
+};
