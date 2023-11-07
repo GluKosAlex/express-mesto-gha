@@ -4,7 +4,6 @@ const cardSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      unique: true,
       required: [true, 'Поле с именем карточки является обязательным'],
       minlength: [2, 'Минимальная длина строки 2 символа'],
       maxlength: [30, 'Минимальная длина строки 30 символов'],
@@ -15,13 +14,13 @@ const cardSchema = new mongoose.Schema(
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'name',
+      ref: 'user',
       required: true,
     },
     likes: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'name',
+        ref: 'user',
       },
     ],
     createdAt: {

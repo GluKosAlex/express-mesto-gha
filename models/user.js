@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      // unique: true,
+      unique: true,
       required: [true, 'Поле с именем пользователя является обязательным'],
       minlength: [2, 'Минимальная длина строки 2 символа'],
       maxlength: [30, 'Минимальная длина строки 30 символов'],
