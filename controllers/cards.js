@@ -2,7 +2,7 @@ import Card from '../models/card.js';
 
 const getCards = async (req, res) => {
   try {
-    const cards = await Card.find({}).populate('owner');
+    const cards = await Card.find({}).populate(['owner', 'likes']);
     return res.send(cards);
   } catch (error) {
     return res.status(500).send({
@@ -39,4 +39,46 @@ const deleteCard = async (req, res) => {
   }
 };
 
-export { getCards, createCard, deleteCard };
+const putCardLike = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const { cardId } = req.params;
+    const updatedCard = await Card.findByIdAndUpdate(
+      cardId,
+      { $addToSet: { likes: _id } },
+      { new: true },
+    ).populate('likes');
+    return res.send(updatedCard);
+  } catch (error) {
+    return res.status(500).send({
+      message: 'Ошибка на стороне сервера',
+      error: error.message,
+    });
+  }
+};
+
+const deleteCardLike = async (req, res) => {
+  try {
+    const { _id } = req.user;
+    const { cardId } = req.params;
+    const updatedCard = await Card.findByIdAndUpdate(
+      cardId,
+      { $pull: { likes: _id } },
+      { new: true },
+    ).populate('likes');
+    return res.send(updatedCard);
+  } catch (error) {
+    return res.status(500).send({
+      message: 'Ошибка на стороне сервера',
+      error: error.message,
+    });
+  }
+};
+
+export {
+  createCard,
+  getCards,
+  deleteCard,
+  putCardLike,
+  deleteCardLike,
+};
