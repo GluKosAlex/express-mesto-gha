@@ -1,3 +1,4 @@
+import { ReasonPhrases, StatusCodes } from 'http-status-codes';
 import User from '../models/user.js';
 import ERROR_CODE_DUPLICATE_MONGO from '../utils/constants.js';
 
@@ -6,7 +7,7 @@ const getUser = async (req, res) => {
     const users = await User.find({});
     return res.send(users);
   } catch (error) {
-    return res.status(500).send({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
       error: error.message,
     });
@@ -18,23 +19,23 @@ const getUserById = async (req, res) => {
     const { id } = req.params;
     const user = await User.findById(id);
     if (!user) {
-      throw new Error('Not found');
+      throw new Error(ReasonPhrases.NOT_FOUND);
     }
     return res.send(user);
   } catch (error) {
-    if (error.message === 'Not found') {
-      return res.status(404).send({
-        message: 'Пользователь не найден',
+    if (error.message === ReasonPhrases.NOT_FOUND) {
+      return res.status(StatusCodes.NOT_FOUND).send({
+        message: `Пользователь по указанному ID ${req.params.id} не найден.`,
       });
     }
 
     if (error.name === 'CastError') {
-      return res.status(400).send({
+      return res.status(StatusCodes.BAD_REQUEST).send({
         message: 'Передан не валидный ID',
       });
     }
 
-    return res.status(500).send({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
       error: error.message,
     });
@@ -44,24 +45,23 @@ const getUserById = async (req, res) => {
 const createUser = async (req, res) => {
   try {
     const newUser = new User(req.body);
-    return res.status(201).send(await newUser.save());
+    return res.status(StatusCodes.CREATED).send(await newUser.save());
   } catch (error) {
     if (error.name === 'ValidationError') {
-      return res.status(400).send({
-        message: 'Ошибка валидации полей',
-        ...error,
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: 'Переданы некорректные данные при создании пользователя.',
       });
     }
 
     if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
-      return res.status(409).send({
+      return res.status(StatusCodes.CONFLICT).send({
         message: 'Пользователь с таким именем уже существует',
-        ...error,
       });
     }
-    return res.status(500).send({
-      message: error.message,
-      error,
+
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
+      message: 'Ошибка на стороне сервера',
+      error: error.message,
     });
   }
 };
@@ -74,29 +74,38 @@ const updateUserInfo = async (req, res) => {
       { ...req.body },
       { new: true },
     );
-    return res.send(updatedUserInfo);
-  } catch (error) {
-    return res.status(500).send({
-      message: 'Ошибка на стороне сервера',
-      error: error.message,
-    });
-  }
-};
 
-const updateUserAvatar = async (req, res) => {
-  try {
-    const { _id } = req.user;
-    const { avatar } = req.body;
-    const updatedUserInfo = await User.findByIdAndUpdate(
-      _id,
-      { avatar },
-      { new: true },
-    );
+    if (!updatedUserInfo) {
+      throw new Error(ReasonPhrases.NOT_FOUND);
+    }
+
+    const error = updatedUserInfo.validateSync();
+    if (error) {
+      throw new Error(error.name);
+    }
+
     return res.send(updatedUserInfo);
   } catch (error) {
-    return res.status(500).send({
+    if (error.message === ReasonPhrases.NOT_FOUND) {
+      return res.status(StatusCodes.NOT_FOUND).send({
+        message: `Пользователь по указанному ID ${req.user._id} не найден.`,
+      });
+    }
+
+    if (error.message === 'ValidationError') {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: 'Переданы некорректные данные при создании пользователя.',
+      });
+    }
+
+    if (error.name === 'CastError') {
+      return res.status(StatusCodes.BAD_REQUEST).send({
+        message: 'Передан не валидный ID',
+      });
+    }
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
       message: 'Ошибка на стороне сервера',
-      error: error.message,
+      error: error.name,
     });
   }
 };
@@ -106,5 +115,4 @@ export {
   getUserById,
   createUser,
   updateUserInfo,
-  updateUserAvatar,
 };
