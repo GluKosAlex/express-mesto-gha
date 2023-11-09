@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 import Card from '../models/card.js';
 
-const getCards = async (req, res) => {
+const getCards = (req, res) => {
   Card.find({})
     .populate(['owner', 'likes'])
     .then((cards) => {
@@ -16,7 +16,7 @@ const getCards = async (req, res) => {
     });
 };
 
-const createCard = async (req, res) => {
+const createCard = (req, res) => {
   const { name, link } = req.body;
   const { _id } = req.user;
   Card({ name, link, owner: _id })
@@ -36,7 +36,7 @@ const createCard = async (req, res) => {
     });
 };
 
-const deleteCard = async (req, res) => {
+const deleteCard = (req, res) => {
   const { cardId } = req.params;
   Card.findByIdAndDelete(cardId)
     .orFail()
@@ -59,7 +59,7 @@ const deleteCard = async (req, res) => {
     });
 };
 
-const putCardLike = async (req, res) => {
+const putCardLike = (req, res) => {
   const { _id } = req.user;
   const { cardId } = req.params;
   Card.findByIdAndUpdate(cardId, { $addToSet: { likes: _id } }, { new: true })
@@ -86,7 +86,7 @@ const putCardLike = async (req, res) => {
     });
 };
 
-const deleteCardLike = async (req, res) => {
+const deleteCardLike = (req, res) => {
   const { _id } = req.user;
   const { cardId } = req.params;
   Card.findByIdAndUpdate(cardId, { $pull: { likes: _id } }, { new: true })

@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 import User from '../models/user.js';
 
-const getUsers = async (req, res) => {
+const getUsers = (req, res) => {
   User.find({})
     .then((users) => {
       res.send(users);
@@ -15,7 +15,7 @@ const getUsers = async (req, res) => {
     });
 };
 
-const getUserById = async (req, res) => {
+const getUserById = (req, res) => {
   const { id } = req.params;
   User.findById(id)
     .orFail()
@@ -40,7 +40,7 @@ const getUserById = async (req, res) => {
     });
 };
 
-const createUser = async (req, res) => {
+const createUser = (req, res) => {
   User(req.body)
     .save()
     .then((user) => res.status(StatusCodes.CREATED).send(user))
@@ -58,21 +58,21 @@ const createUser = async (req, res) => {
     });
 };
 
-const updateUserInfo = async (req, res) => {
-  const { _id } = req.user;
+const updateUser = (userData, userId, res) => {
   User.findByIdAndUpdate(
-    _id,
-    { ...req.body },
+    userId,
+    { ...userData },
     {
       new: true,
       runValidators: true,
     },
-  ).orFail()
+  )
+    .orFail()
     .then((updatedUserInfo) => res.send(updatedUserInfo))
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
         return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Пользователь по указанному ID ${req.user._id} не найден.`,
+          message: `Пользователь по указанному ID ${userId} не найден.`,
         });
       }
       if (error instanceof mongoose.Error.ValidationError) {
@@ -92,9 +92,22 @@ const updateUserInfo = async (req, res) => {
     });
 };
 
+const updateUserInfo = (req, res) => {
+  const { _id } = req.user;
+  const { name, about } = req.body;
+  updateUser({ name, about }, _id, res);
+};
+
+const updateUserAvatar = (req, res) => {
+  const { _id } = req.user;
+  const { avatar } = req.body;
+  updateUser({ avatar }, _id, res);
+};
+
 export {
   getUsers,
   getUserById,
   createUser,
   updateUserInfo,
+  updateUserAvatar,
 };
