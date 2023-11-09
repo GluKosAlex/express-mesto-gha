@@ -1,3 +1,4 @@
+import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 import { Router } from 'express';
 import usersRouter from './users.js';
 import cardsRouter from './cards.js';
@@ -6,5 +7,10 @@ const router = new Router();
 
 router.use('/users', usersRouter);
 router.use('/cards', cardsRouter);
+router.use('*', (req, res) => {
+  res
+    .status(StatusCodes.NOT_FOUND)
+    .send(`Error: ${StatusCodes.NOT_FOUND} ${req.originalUrl} ${ReasonPhrases.NOT_FOUND}`);
+});
 
 export default router;

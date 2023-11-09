@@ -72,17 +72,20 @@ const updateUserInfo = async (req, res) => {
     const updatedUserInfo = await User.findByIdAndUpdate(
       _id,
       { ...req.body },
-      { new: true },
+      {
+        new: true,
+        runValidators: true,
+      },
     );
 
     if (!updatedUserInfo) {
       throw new Error(ReasonPhrases.NOT_FOUND);
     }
 
-    const error = updatedUserInfo.validateSync();
-    if (error) {
-      throw new Error(error.name);
-    }
+    // const error = updatedUserInfo.validateSync();
+    // if (error) {
+    //   throw new Error(error.name);
+    // }
 
     return res.send(updatedUserInfo);
   } catch (error) {
@@ -92,7 +95,7 @@ const updateUserInfo = async (req, res) => {
       });
     }
 
-    if (error.message === 'ValidationError') {
+    if (error.name === 'ValidationError') {
       return res.status(StatusCodes.BAD_REQUEST).send({
         message: 'Переданы некорректные данные при создании пользователя.',
       });
