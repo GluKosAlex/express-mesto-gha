@@ -59,10 +59,10 @@ const deleteCard = (req, res) => {
     });
 };
 
-const putCardLike = (req, res) => {
+const toggleCardLike = (action, req, res) => {
   const { _id } = req.user;
   const { cardId } = req.params;
-  Card.findByIdAndUpdate(cardId, { $addToSet: { likes: _id } }, { new: true })
+  Card.findByIdAndUpdate(cardId, { [action]: { likes: _id } }, { new: true })
     .populate('likes')
     .orFail()
     .then((updatedCard) => res.send(updatedCard))
@@ -75,7 +75,7 @@ const putCardLike = (req, res) => {
 
       if (error instanceof mongoose.Error.CastError) {
         return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные для постановки лайка.',
+          message: 'Переданы некорректные данные для постановки/снятии лайка.',
         });
       }
 
@@ -86,31 +86,12 @@ const putCardLike = (req, res) => {
     });
 };
 
+const putCardLike = (req, res) => {
+  toggleCardLike('$addToSet', req, res);
+};
+
 const deleteCardLike = (req, res) => {
-  const { _id } = req.user;
-  const { cardId } = req.params;
-  Card.findByIdAndUpdate(cardId, { $pull: { likes: _id } }, { new: true })
-    .populate('likes')
-    .orFail()
-    .then((updatedCard) => res.send(updatedCard))
-    .catch((error) => {
-      if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Передан несуществующий ID ${req.params.cardId} карточки.`,
-        });
-      }
-
-      if (error instanceof mongoose.Error.CastError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные для снятии лайка.',
-        });
-      }
-
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
-    });
+  toggleCardLike('$pull', req, res);
 };
 
 export {

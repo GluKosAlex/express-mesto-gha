@@ -80,11 +80,6 @@ const updateUser = (userData, userId, res) => {
           message: 'Переданы некорректные данные при создании пользователя.',
         });
       }
-      if (error instanceof mongoose.Error.CastError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Передан не валидный ID',
-        });
-      }
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
         message: 'Ошибка на стороне сервера',
         error: error.message,
