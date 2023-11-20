@@ -1,7 +1,20 @@
 import mongoose from 'mongoose';
+import isEmail from 'validator/lib/isEmail.js';
 
 const userSchema = new mongoose.Schema(
   {
+    email: {
+      type: String,
+      validate: {
+        validator: (v) => isEmail(v),
+        message: (props) => `${props.value} не валидный адрес электронной почты!`,
+      },
+      required: [true, 'Поле с адресом электронной почты является обязательным'],
+    },
+    password: {
+      type: String,
+      required: [true, 'Поле с паролем является обязательным'],
+    },
     name: {
       type: String,
       required: [true, 'Поле с именем пользователя является обязательным'],
