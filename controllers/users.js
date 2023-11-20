@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
 import { StatusCodes } from 'http-status-codes';
+
 import User from '../models/user.js';
+import { ERROR_CODE_DUPLICATE_MONGO, SALT_ROUNDS } from '../utils/constants.js';
 
 const getUsers = (req, res) => {
   User.find({})
@@ -23,7 +26,7 @@ const getUserById = (req, res) => {
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
         return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Пользователь по указанному ID ${req.params.id} не найден.`,
+          message: `Пользователь по указанному ID ${req.params.id} не найден`,
         });
       }
 
@@ -41,13 +44,20 @@ const getUserById = (req, res) => {
 };
 
 const createUser = (req, res) => {
-  User(req.body)
-    .save()
+  bcrypt
+    .hash(req.body.password, SALT_ROUNDS)
+    .then((hash) => User({ ...req.body, password: hash }).save())
     .then((user) => res.status(StatusCodes.CREATED).send(user))
     .catch((error) => {
       if (error instanceof mongoose.Error.ValidationError) {
         return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные при создании пользователя.',
+          message: 'Переданы некорректные данные при создании пользователя',
+        });
+      }
+
+      if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
+        return res.status(StatusCodes.CONFLICT).send({
+          message: 'Пользователь с таким адресом электронной почты уже существует',
         });
       }
 
@@ -75,11 +85,13 @@ const updateUser = (userData, userId, res) => {
           message: `Пользователь по указанному ID ${userId} не найден.`,
         });
       }
+
       if (error instanceof mongoose.Error.ValidationError) {
         return res.status(StatusCodes.BAD_REQUEST).send({
           message: 'Переданы некорректные данные при создании пользователя.',
         });
       }
+
       return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
         message: 'Ошибка на стороне сервера',
         error: error.message,
@@ -100,9 +112,5 @@ const updateUserAvatar = (req, res) => {
 };
 
 export {
-  getUsers,
-  getUserById,
-  createUser,
-  updateUserInfo,
-  updateUserAvatar,
+  getUsers, getUserById, createUser, updateUserInfo, updateUserAvatar,
 };
