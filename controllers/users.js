@@ -4,6 +4,36 @@ import { StatusCodes } from 'http-status-codes';
 
 import User from '../models/user.js';
 import { ERROR_CODE_DUPLICATE_MONGO, SALT_ROUNDS } from '../utils/constants.js';
+import generateToken from '../utils/jwt.js';
+
+const login = (req, res) => {
+  const { email, password } = req.body;
+
+  User.findOne({ email })
+    .select('+password')
+    .orFail()
+    .then(async (user) => {
+      const matched = await bcrypt.compare(String(password), user.password);
+      if (!matched) {
+        throw new Error('NotAuthenticate');
+      }
+
+      const token = generateToken({ _id: user._id });
+      res.send({ token });
+    })
+    .catch((error) => {
+      if (error instanceof mongoose.Error.DocumentNotFoundError || error.message === 'NotAuthenticate') {
+        return res.status(StatusCodes.UNAUTHORIZED).send({
+          message: 'Не правильно введен почта/пароль',
+        });
+      }
+
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
+        message: 'Ошибка на стороне сервера',
+        // error: error.message,
+      });
+    });
+};
 
 const getUsers = (req, res) => {
   User.find({})
@@ -112,5 +142,5 @@ const updateUserAvatar = (req, res) => {
 };
 
 export {
-  getUsers, getUserById, createUser, updateUserInfo, updateUserAvatar,
+  login, getUsers, getUserById, createUser, updateUser, updateUserInfo, updateUserAvatar,
 };
