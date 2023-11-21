@@ -10,6 +10,7 @@ const usersRouter = new Router();
 
 usersRouter.get('/', getUsers);
 usersRouter.get('/:id', getUserById);
+usersRouter.get('/me', getUserById);
 usersRouter.patch('/me', updateUserInfo);
 usersRouter.patch('/me/avatar', updateUserAvatar);
 
