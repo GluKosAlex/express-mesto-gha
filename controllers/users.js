@@ -48,8 +48,7 @@ const getUsers = (req, res) => {
     });
 };
 
-const getUserById = (req, res) => {
-  const { id } = req.params;
+const getUser = (req, res, id) => {
   User.findById(id)
     .orFail()
     .then((user) => res.send(user))
@@ -71,6 +70,14 @@ const getUserById = (req, res) => {
         error: error.message,
       });
     });
+};
+
+const getCurrentUser = (req, res) => {
+  getUser(req, res, req.user._id);
+};
+
+const getUserById = (req, res) => {
+  getUser(req, res, req.params.id);
 };
 
 const createUser = (req, res) => {
@@ -142,5 +149,12 @@ const updateUserAvatar = (req, res) => {
 };
 
 export {
-  login, getUsers, getUserById, createUser, updateUser, updateUserInfo, updateUserAvatar,
+  login,
+  getUsers,
+  getCurrentUser,
+  getUserById,
+  createUser,
+  updateUser,
+  updateUserInfo,
+  updateUserAvatar,
 };

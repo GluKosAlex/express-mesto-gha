@@ -11,13 +11,13 @@ const app = express();
 
 app.use(json());
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '6548cb5c88e8414c0b9f1018',
-  };
+// app.use((req, res, next) => {
+//   req.user = {
+//     _id: '6548cb5c88e8414c0b9f1018',
+//   };
 
-  next();
-});
+//   next();
+// });
 
 app.use(router);
 
