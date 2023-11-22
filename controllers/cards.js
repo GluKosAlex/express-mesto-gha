@@ -25,7 +25,7 @@ const createCard = (req, res) => {
     .catch((error) => {
       if (error instanceof mongoose.Error.ValidationError) {
         return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные при создании карточки.',
+          message: 'Переданы некорректные данные при создании карточки',
         });
       }
 
@@ -38,13 +38,13 @@ const createCard = (req, res) => {
 
 const deleteCard = (req, res) => {
   const { cardId } = req.params;
-  Card.findByIdAndDelete(cardId)
+  Card.findOneAndDelete({ _id: cardId, owner: req.user._id })
     .orFail()
     .then((card) => res.send(card))
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
         return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Карточка по указанному ID ${req.user._id} не найдена.`,
+          message: 'Нельзя удалять карточки других пользователей',
         });
       }
       if (error instanceof mongoose.Error.CastError) {
@@ -69,13 +69,13 @@ const toggleCardLike = (action, req, res) => {
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
         return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Передан несуществующий ID ${req.params.cardId} карточки.`,
+          message: `Передан несуществующий ID ${req.params.cardId} карточки`,
         });
       }
 
       if (error instanceof mongoose.Error.CastError) {
         return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные для постановки/снятии лайка.',
+          message: 'Переданы некорректные данные для постановки/снятии лайка',
         });
       }
 
