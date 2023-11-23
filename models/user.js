@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import isEmail from 'validator/lib/isEmail.js';
+import { URLExpression } from '../utils/constants.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -35,6 +36,7 @@ const userSchema = new mongoose.Schema(
     },
     avatar: {
       type: String,
+      match: [URLExpression, 'Вы ввели не корректный URL'],
       required: [true, 'Поле с ссылкой на аватарку является обязательным'],
       default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
     },

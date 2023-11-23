@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { URLExpression } from '../utils/constants.js';
 
 const cardSchema = new mongoose.Schema(
   {
@@ -10,6 +11,7 @@ const cardSchema = new mongoose.Schema(
     },
     link: {
       type: String,
+      match: [URLExpression, 'Вы ввели не корректный URL'],
       required: [true, 'Поле с ссылкой на картинку является обязательным'],
     },
     owner: {
