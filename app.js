@@ -3,9 +3,11 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import router from './routes/index.js';
 
-const { PORT, CONN_STR } = process.env;
+const { PORT } = process.env;
 
-mongoose.connect(CONN_STR).then(() => console.log('Connection to the DB is successful'));
+mongoose
+  .connect('mongodb://127.0.0.1:27017/mestodb')
+  .then(() => console.log('Connection to the DB is successful'));
 
 const app = express();
 
