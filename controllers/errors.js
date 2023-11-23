@@ -6,5 +6,6 @@ export default (error, req, res, next) => {
 
   res.status(statusCode).send({
     message: statusCode === StatusCodes.INTERNAL_SERVER_ERROR ? 'На сервере произошла ошибка' : message,
+    error: message,
   });
 };

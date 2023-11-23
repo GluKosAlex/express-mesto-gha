@@ -35,16 +35,20 @@ const createCard = asyncErrorHandler((req, res, next) => {
 const deleteCard = asyncErrorHandler((req, res, next) => {
   const { cardId } = req.params;
 
-  return Card.findOneAndDelete({ _id: cardId, owner: req.user._id })
+  return Card.findById(cardId)
     .orFail()
-    .then((card) => res.send(card))
+    .then((card) => {
+      if (!card.owner.equals(req.user._id)) {
+        throw new CustomError('Нельзя удалять карточки других пользователей', StatusCodes.FORBIDDEN);
+      }
+      Card.deleteOne(card).orFail().then(() => {
+        res.send({ message: 'Карточка удалена' });
+      });
+    })
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return next(new CustomError('Нельзя удалять карточки других пользователей', StatusCodes.NOT_FOUND));
-      }
-
-      if (error instanceof mongoose.Error.CastError) {
-        return next(new CustomError('Передан не валидный ID', StatusCodes.BAD_REQUEST));
+        console.log(error);
+        return next(new CustomError('Карточка с указанным ID не найдена', StatusCodes.NOT_FOUND));
       }
 
       return Promise.reject(error);

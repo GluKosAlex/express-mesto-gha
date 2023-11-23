@@ -67,7 +67,13 @@ const getUserById = asyncErrorHandler((req, res, next) => getUser(req, res, next
 const createUser = asyncErrorHandler((req, res, next) => bcrypt
   .hash(req.body.password, SALT_ROUNDS)
   .then((hash) => User({ ...req.body, password: hash }).save())
-  .then((user) => res.status(StatusCodes.CREATED).send(user))
+  .then((user) => res.status(StatusCodes.CREATED).send({
+    name: user.name,
+    about: user.about,
+    avatar: user.avatar,
+    _id: user._id,
+    email: user.email,
+  }))
   .catch((error) => {
     if (error instanceof mongoose.Error.ValidationError) {
       return next(
@@ -77,7 +83,10 @@ const createUser = asyncErrorHandler((req, res, next) => bcrypt
 
     if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
       return next(
-        new CustomError('Пользователь с таким адресом электронной почты уже существует', StatusCodes.CONFLICT),
+        new CustomError(
+          'Пользователь с таким адресом электронной почты уже существует',
+          StatusCodes.CONFLICT,
+        ),
       );
     }
 
