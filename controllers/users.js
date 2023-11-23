@@ -32,7 +32,8 @@ const login = asyncErrorHandler((req, res, next) => {
     });
 });
 
-const getUsers = asyncErrorHandler((req, res) => User.find({}).then((users) => {
+// eslint-disable-next-line no-unused-vars
+const getUsers = asyncErrorHandler((req, res, next) => User.find({}).then((users) => {
   res.send(users);
 }));
 
@@ -106,13 +107,13 @@ const updateUser = (userData, userId, res, next) => User.findByIdAndUpdate(
 const updateUserInfo = asyncErrorHandler((req, res, next) => {
   const { _id } = req.user;
   const { name, about } = req.body;
-  updateUser({ name, about }, _id, res, next);
+  return updateUser({ name, about }, _id, res, next);
 });
 
 const updateUserAvatar = asyncErrorHandler((req, res, next) => {
   const { _id } = req.user;
   const { avatar } = req.body;
-  updateUser({ avatar }, _id, res, next);
+  return updateUser({ avatar }, _id, res, next);
 });
 
 export {

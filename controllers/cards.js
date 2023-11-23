@@ -1,98 +1,81 @@
 import mongoose from 'mongoose';
 import { StatusCodes } from 'http-status-codes';
 import Card from '../models/card.js';
+import asyncErrorHandler from '../utils/asyncErrorHandler.js';
+import CustomError from '../utils/customError.js';
 
-const getCards = (req, res) => {
-  Card.find({})
-    .populate(['owner', 'likes'])
-    .then((cards) => {
-      res.send(cards);
-    })
-    .catch((error) => {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
-    });
-};
+// eslint-disable-next-line no-unused-vars
+const getCards = asyncErrorHandler((req, res, next) => Card.find({})
+  .populate(['owner', 'likes'])
+  .then((cards) => {
+    res.send(cards);
+  }));
 
-const createCard = (req, res) => {
+const createCard = asyncErrorHandler((req, res, next) => {
   const { name, link } = req.body;
   const { _id } = req.user;
-  Card({ name, link, owner: _id })
+
+  return Card({ name, link, owner: _id })
     .save()
     .then((card) => res.status(StatusCodes.CREATED).send(card))
     .catch((error) => {
       if (error instanceof mongoose.Error.ValidationError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные при создании карточки',
-        });
+        return next(
+          new CustomError('Переданы некорректные данные при создании карточки', StatusCodes.BAD_REQUEST),
+        );
       }
 
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
+      return Promise.reject(error);
     });
-};
+});
 
-const deleteCard = (req, res) => {
+const deleteCard = asyncErrorHandler((req, res, next) => {
   const { cardId } = req.params;
-  Card.findOneAndDelete({ _id: cardId, owner: req.user._id })
+
+  return Card.findOneAndDelete({ _id: cardId, owner: req.user._id })
     .orFail()
     .then((card) => res.send(card))
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(StatusCodes.NOT_FOUND).send({
-          message: 'Нельзя удалять карточки других пользователей',
-        });
+        return next(new CustomError('Нельзя удалять карточки других пользователей', StatusCodes.NOT_FOUND));
       }
-      if (error instanceof mongoose.Error.CastError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Передан не валидный ID',
-        });
-      }
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
-    });
-};
 
-const toggleCardLike = (action, req, res) => {
+      if (error instanceof mongoose.Error.CastError) {
+        return next(new CustomError('Передан не валидный ID', StatusCodes.BAD_REQUEST));
+      }
+
+      return Promise.reject(error);
+    });
+});
+
+const toggleCardLike = (action, req, res, next) => {
   const { _id } = req.user;
   const { cardId } = req.params;
-  Card.findByIdAndUpdate(cardId, { [action]: { likes: _id } }, { new: true })
+
+  return Card.findByIdAndUpdate(cardId, { [action]: { likes: _id } }, { new: true })
     .populate('likes')
     .orFail()
     .then((updatedCard) => res.send(updatedCard))
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Передан несуществующий ID ${req.params.cardId} карточки`,
-        });
+        return next(
+          new CustomError(`Передан несуществующий ID ${req.params.cardId} карточки`, StatusCodes.NOT_FOUND),
+        );
       }
 
       if (error instanceof mongoose.Error.CastError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные для постановки/снятии лайка',
-        });
+        return next(
+          new CustomError('Переданы некорректные данные для постановки/снятии лайка', StatusCodes.BAD_REQUEST),
+        );
       }
 
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
+      return Promise.reject(error);
     });
 };
 
-const putCardLike = (req, res) => {
-  toggleCardLike('$addToSet', req, res);
-};
+const putCardLike = asyncErrorHandler((req, res, next) => toggleCardLike('$addToSet', req, res, next));
 
-const deleteCardLike = (req, res) => {
-  toggleCardLike('$pull', req, res);
-};
+const deleteCardLike = asyncErrorHandler((req, res, next) => toggleCardLike('$pull', req, res, next));
 
 export {
   createCard,
