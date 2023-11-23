@@ -1,12 +1,13 @@
 import { StatusCodes, ReasonPhrases } from 'http-status-codes';
 import { Router } from 'express';
-import globalErrorHandler from '../controllers/errors.js';
+import { errors } from 'celebrate'
 
 import usersRouter from './users.js';
 import cardsRouter from './cards.js';
 import { createUser, login } from '../controllers/users.js';
 import auth from '../middlewares/auth.js';
 import CustomError from '../utils/customError.js';
+import globalErrorHandler from '../controllers/errors.js';
 
 const router = new Router();
 
@@ -22,6 +23,7 @@ router.use('*', auth, (req, res, next) => {
   next(err);
 });
 
+router.use(errors());
 router.use(globalErrorHandler);
 
 export default router;

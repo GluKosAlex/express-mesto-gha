@@ -8,6 +8,7 @@ import generateToken from '../utils/jwt.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.js';
 import CustomError from '../utils/customError.js';
 
+// Login controller
 const login = asyncErrorHandler((req, res, next) => {
   const { email, password } = req.body;
 
@@ -32,11 +33,13 @@ const login = asyncErrorHandler((req, res, next) => {
     });
 });
 
+// Get all users controller
 // eslint-disable-next-line no-unused-vars
 const getUsers = asyncErrorHandler((req, res, next) => User.find({}).then((users) => {
   res.send(users);
 }));
 
+// Get user controller
 const getUser = (req, res, next, id) => User.findById(id)
   .orFail()
   .then((user) => res.send(user))
@@ -54,10 +57,13 @@ const getUser = (req, res, next, id) => User.findById(id)
     return Promise.reject(error);
   });
 
+// Get current user decorator
 const getCurrentUser = asyncErrorHandler((req, res, next) => getUser(req, res, next, req.user._id));
 
+// Get user by ID decorator
 const getUserById = asyncErrorHandler((req, res, next) => getUser(req, res, next, req.params.id));
 
+// Create user controller
 const createUser = asyncErrorHandler((req, res, next) => bcrypt
   .hash(req.body.password, SALT_ROUNDS)
   .then((hash) => User({ ...req.body, password: hash }).save())
@@ -78,6 +84,7 @@ const createUser = asyncErrorHandler((req, res, next) => bcrypt
     return Promise.reject(error);
   }));
 
+// Update user controller
 const updateUser = (userData, userId, res, next) => User.findByIdAndUpdate(
   userId,
   { ...userData },
@@ -104,12 +111,14 @@ const updateUser = (userData, userId, res, next) => User.findByIdAndUpdate(
     return Promise.reject(error);
   });
 
+// Update user info decorator
 const updateUserInfo = asyncErrorHandler((req, res, next) => {
   const { _id } = req.user;
   const { name, about } = req.body;
   return updateUser({ name, about }, _id, res, next);
 });
 
+// Update user avatar decorator
 const updateUserAvatar = asyncErrorHandler((req, res, next) => {
   const { _id } = req.user;
   const { avatar } = req.body;

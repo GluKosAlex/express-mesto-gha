@@ -4,6 +4,7 @@ import Card from '../models/card.js';
 import asyncErrorHandler from '../utils/asyncErrorHandler.js';
 import CustomError from '../utils/customError.js';
 
+// Get all cards controller
 // eslint-disable-next-line no-unused-vars
 const getCards = asyncErrorHandler((req, res, next) => Card.find({})
   .populate(['owner', 'likes'])
@@ -11,6 +12,7 @@ const getCards = asyncErrorHandler((req, res, next) => Card.find({})
     res.send(cards);
   }));
 
+// Create card controller
 const createCard = asyncErrorHandler((req, res, next) => {
   const { name, link } = req.body;
   const { _id } = req.user;
@@ -29,6 +31,7 @@ const createCard = asyncErrorHandler((req, res, next) => {
     });
 });
 
+// Delete card controller
 const deleteCard = asyncErrorHandler((req, res, next) => {
   const { cardId } = req.params;
 
@@ -48,6 +51,7 @@ const deleteCard = asyncErrorHandler((req, res, next) => {
     });
 });
 
+// Toggle like card controller
 const toggleCardLike = (action, req, res, next) => {
   const { _id } = req.user;
   const { cardId } = req.params;
@@ -73,8 +77,10 @@ const toggleCardLike = (action, req, res, next) => {
     });
 };
 
+// Add like card decorator
 const putCardLike = asyncErrorHandler((req, res, next) => toggleCardLike('$addToSet', req, res, next));
 
+// Delete like card decorator
 const deleteCardLike = asyncErrorHandler((req, res, next) => toggleCardLike('$pull', req, res, next));
 
 export {
