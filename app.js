@@ -3,24 +3,25 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import router from './routes/index.js';
 
-const { PORT } = process.env;
+const { PORT, CONN_STR } = process.env;
 
-mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
+mongoose.connect(CONN_STR).then(() => console.log('Connection to the DB is successful'));
 
 const app = express();
 
 app.use(json());
 
-// app.use((req, res, next) => {
-//   req.user = {
-//     _id: '6548cb5c88e8414c0b9f1018',
-//   };
-
-//   next();
-// });
-
 app.use(router);
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server started on ${PORT} port`);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.log(err.name, err.message);
+  console.log('Unhandled rejection occurred. Shutting down...');
+
+  server.close(() => {
+    process.exit(1);
+  });
 });

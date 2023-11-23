@@ -5,148 +5,115 @@ import { StatusCodes } from 'http-status-codes';
 import User from '../models/user.js';
 import { ERROR_CODE_DUPLICATE_MONGO, SALT_ROUNDS } from '../utils/constants.js';
 import generateToken from '../utils/jwt.js';
+import asyncErrorHandler from '../utils/asyncErrorHandler.js';
+import CustomError from '../utils/customError.js';
 
-const login = (req, res) => {
+const login = asyncErrorHandler((req, res, next) => {
   const { email, password } = req.body;
 
-  User.findOne({ email })
+  return User.findOne({ email })
     .select('+password')
     .orFail()
     .then(async (user) => {
       const matched = await bcrypt.compare(String(password), user.password);
       if (!matched) {
-        throw new Error('NotAuthenticate');
+        throw new CustomError('Не правильно введен почта/пароль', StatusCodes.UNAUTHORIZED);
       }
 
       const token = generateToken({ _id: user._id });
       res.send({ token });
     })
     .catch((error) => {
-      if (error instanceof mongoose.Error.DocumentNotFoundError || error.message === 'NotAuthenticate') {
-        return res.status(StatusCodes.UNAUTHORIZED).send({
-          message: 'Не правильно введен почта/пароль',
-        });
-      }
-
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        // error: error.message,
-      });
-    });
-};
-
-const getUsers = (req, res) => {
-  User.find({})
-    .then((users) => {
-      res.send(users);
-    })
-    .catch((error) => {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
-    });
-};
-
-const getUser = (req, res, id) => {
-  User.findById(id)
-    .orFail()
-    .then((user) => res.send(user))
-    .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Пользователь по указанному ID ${req.params.id} не найден`,
-        });
+        return next(new CustomError('Не правильно введен почта/пароль', StatusCodes.UNAUTHORIZED));
       }
 
-      if (error instanceof mongoose.Error.CastError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Передан не валидный ID',
-        });
-      }
-
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
+      return Promise.reject(error);
     });
-};
+});
 
-const getCurrentUser = (req, res) => {
-  getUser(req, res, req.user._id);
-};
+const getUsers = asyncErrorHandler((req, res) => User.find({}).then((users) => {
+  res.send(users);
+}));
 
-const getUserById = (req, res) => {
-  getUser(req, res, req.params.id);
-};
+const getUser = (req, res, next, id) => User.findById(id)
+  .orFail()
+  .then((user) => res.send(user))
+  .catch((error) => {
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(
+        new CustomError(`Пользователь по указанному ID ${req.params.id} не найден`, StatusCodes.NOT_FOUND),
+      );
+    }
 
-const createUser = (req, res) => {
-  bcrypt
-    .hash(req.body.password, SALT_ROUNDS)
-    .then((hash) => User({ ...req.body, password: hash }).save())
-    .then((user) => res.status(StatusCodes.CREATED).send(user))
-    .catch((error) => {
-      if (error instanceof mongoose.Error.ValidationError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные при создании пользователя',
-        });
-      }
+    if (error instanceof mongoose.Error.CastError) {
+      return next(new CustomError('Передан не валидный ID', StatusCodes.BAD_REQUEST));
+    }
 
-      if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
-        return res.status(StatusCodes.CONFLICT).send({
-          message: 'Пользователь с таким адресом электронной почты уже существует',
-        });
-      }
+    return Promise.reject(error);
+  });
 
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
-    });
-};
+const getCurrentUser = asyncErrorHandler((req, res, next) => getUser(req, res, next, req.user._id));
 
-const updateUser = (userData, userId, res) => {
-  User.findByIdAndUpdate(
-    userId,
-    { ...userData },
-    {
-      new: true,
-      runValidators: true,
-    },
-  )
-    .orFail()
-    .then((updatedUserInfo) => res.send(updatedUserInfo))
-    .catch((error) => {
-      if (error instanceof mongoose.Error.DocumentNotFoundError) {
-        return res.status(StatusCodes.NOT_FOUND).send({
-          message: `Пользователь по указанному ID ${userId} не найден.`,
-        });
-      }
+const getUserById = asyncErrorHandler((req, res, next) => getUser(req, res, next, req.params.id));
 
-      if (error instanceof mongoose.Error.ValidationError) {
-        return res.status(StatusCodes.BAD_REQUEST).send({
-          message: 'Переданы некорректные данные при создании пользователя.',
-        });
-      }
+const createUser = asyncErrorHandler((req, res, next) => bcrypt
+  .hash(req.body.password, SALT_ROUNDS)
+  .then((hash) => User({ ...req.body, password: hash }).save())
+  .then((user) => res.status(StatusCodes.CREATED).send(user))
+  .catch((error) => {
+    if (error instanceof mongoose.Error.ValidationError) {
+      return next(
+        new CustomError('Переданы некорректные данные при создании пользователя', StatusCodes.BAD_REQUEST),
+      );
+    }
 
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-        message: 'Ошибка на стороне сервера',
-        error: error.message,
-      });
-    });
-};
+    if (error.code === ERROR_CODE_DUPLICATE_MONGO) {
+      return next(
+        new CustomError('Пользователь с таким адресом электронной почты уже существует', StatusCodes.CONFLICT),
+      );
+    }
 
-const updateUserInfo = (req, res) => {
+    return Promise.reject(error);
+  }));
+
+const updateUser = (userData, userId, res, next) => User.findByIdAndUpdate(
+  userId,
+  { ...userData },
+  {
+    new: true,
+    runValidators: true,
+  },
+)
+  .orFail()
+  .then((updatedUserInfo) => res.send(updatedUserInfo))
+  .catch((error) => {
+    if (error instanceof mongoose.Error.DocumentNotFoundError) {
+      return next(
+        new CustomError(`Пользователь по указанному ID ${userId} не найден`, StatusCodes.NOT_FOUND),
+      );
+    }
+
+    if (error instanceof mongoose.Error.ValidationError) {
+      return next(
+        new CustomError('Переданы некорректные данные при создании пользователя', StatusCodes.BAD_REQUEST),
+      );
+    }
+
+    return Promise.reject(error);
+  });
+
+const updateUserInfo = asyncErrorHandler((req, res, next) => {
   const { _id } = req.user;
   const { name, about } = req.body;
-  updateUser({ name, about }, _id, res);
-};
+  updateUser({ name, about }, _id, res, next);
+});
 
-const updateUserAvatar = (req, res) => {
+const updateUserAvatar = asyncErrorHandler((req, res, next) => {
   const { _id } = req.user;
   const { avatar } = req.body;
-  updateUser({ avatar }, _id, res);
-};
+  updateUser({ avatar }, _id, res, next);
+});
 
 export {
   login,
