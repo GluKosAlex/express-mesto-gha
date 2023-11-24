@@ -1,6 +1,8 @@
 import { StatusCodes } from 'http-status-codes';
 import jwt from 'jsonwebtoken';
 
+import CustomError from '../utils/customError.js';
+
 const { JWT_SECRET, NODE_ENV } = process.env;
 
 const auth = (req, res, next) => {
@@ -10,34 +12,21 @@ const auth = (req, res, next) => {
     const { authorization } = req.headers;
 
     if (!authorization || !authorization.startsWith('Bearer ')) {
-      throw new Error('NotAuthenticate');
+      return next(new CustomError('Необходима авторизация', StatusCodes.UNAUTHORIZED));
     }
 
     const token = authorization.replace('Bearer ', '');
     payload = jwt.verify(token, NODE_ENV ? JWT_SECRET : 'dev-secret-key');
   } catch (error) {
-    if (error.message === 'NotAuthenticate') {
-      return res.status(StatusCodes.UNAUTHORIZED).send({
-        message: 'Необходима авторизация',
-      });
-    }
-
     if (error.name === 'JsonWebTokenError') {
-      return res.status(StatusCodes.UNAUTHORIZED).send({
-        message: 'С токеном что-то не так',
-      });
+      return next(new CustomError('С токеном что-то не так', StatusCodes.UNAUTHORIZED));
     }
 
     if (error.name === 'TokenExpiredError') {
-      return res.status(StatusCodes.UNAUTHORIZED).send({
-        message: 'Срок действия токена истек',
-      });
+      return next(new CustomError('Срок действия токена истек', StatusCodes.UNAUTHORIZED));
     }
 
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).send({
-      message: 'Ошибка на стороне сервера',
-      // error: error.message,
-    });
+    return next(error);
   }
 
   req.user = payload;

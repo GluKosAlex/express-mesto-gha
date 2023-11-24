@@ -41,9 +41,7 @@ const deleteCard = asyncErrorHandler((req, res, next) => {
       if (!card.owner.equals(req.user._id)) {
         throw new CustomError('Нельзя удалять карточки других пользователей', StatusCodes.FORBIDDEN);
       }
-      Card.deleteOne(card).orFail().then(() => {
-        res.send({ message: 'Карточка удалена' });
-      });
+      Card.deleteOne(card).orFail().then(() => res.send({ message: 'Карточка удалена' }));
     })
     .catch((error) => {
       if (error instanceof mongoose.Error.DocumentNotFoundError) {
