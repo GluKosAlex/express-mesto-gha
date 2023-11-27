@@ -1,6 +1,7 @@
 import express, { json } from 'express';
 import 'dotenv/config';
 import mongoose from 'mongoose';
+import helmet from 'helmet';
 import router from './routes/index.js';
 
 const { PORT = 3000, CONN_STR = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
@@ -8,6 +9,8 @@ const { PORT = 3000, CONN_STR = 'mongodb://127.0.0.1:27017/mestodb' } = process.
 mongoose.connect(CONN_STR).then(() => console.log('Connection to the DB is successful'));
 
 const app = express();
+
+app.use(helmet());
 
 app.use(json());
 
